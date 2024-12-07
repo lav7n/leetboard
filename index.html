@@ -30,7 +30,13 @@
 <body>
     <h1>LeetCode Leaderboard</h1>
     <div class="form-container">
-        <input type="text" id="username" placeholder="Your Name">
+        <select id="username">
+            <option value="Aryaman">Aryaman</option>
+            <option value="Laven">Laven</option>
+            <option value="Siddarth">Siddarth</option>
+            <option value="Vaibhavi">Vaibhavi</option>
+            <option value="Arshaq">Arshaq</option>
+        </select>
         <select id="difficulty">
             <option value="easy">Easy (1 pt)</option>
             <option value="medium">Medium (2 pts)</option>
@@ -76,7 +82,7 @@
             const points = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 2 : 4;
 
             if (!username) {
-                alert("Please enter your name!");
+                alert("Please select your name!");
                 return;
             }
 
@@ -87,7 +93,15 @@
                 timestamp: new Date().toISOString()
             };
 
-            db.ref('submissions').push(submission);
+            // Push the submission to the database
+            db.ref('submissions').push(submission)
+                .then(() => {
+                    alert("Submission logged successfully!");
+                    updateLeaderboard(); // Update leaderboard after logging
+                })
+                .catch((error) => {
+                    console.error("Error logging submission:", error);
+                });
         }
 
         function updateLeaderboard() {
@@ -96,6 +110,7 @@
                 const scores = {};
                 const historyList = [];
 
+                // Aggregate scores and history
                 for (let id in submissions) {
                     const { username, difficulty, points, timestamp } = submissions[id];
 
