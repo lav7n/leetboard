@@ -54,62 +54,71 @@
     <h2>History</h2>
     <div id="history"></div>
 
-    <script>
-        // Firebase configuration (replace with your project details)
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+    
         const firebaseConfig = {
-          apiKey: "AIzaSyDMz19WxPbbZRcA0EfDdxSn1422BA26DHo",
-          authDomain: "leetbord.firebaseapp.com",
-          projectId: "leetbord",
-          storageBucket: "leetbord.firebasestorage.app",
-          messagingSenderId: "61662012767",
-          appId: "1:61662012767:web:daa9c61f6dfe21e5e6c2ea",
-          measurementId: "G-Y7HN2696FY"
+            apiKey: "AIzaSyDMz19WxPbbZRcA0EfDdxSn1422BA26DHo",
+            authDomain: "leetbord.firebaseapp.com",
+            projectId: "leetbord",
+            storageBucket: "leetbord.firebasestorage.app",
+            messagingSenderId: "61662012767",
+            appId: "1:61662012767:web:daa9c61f6dfe21e5e6c2ea",
+            measurementId: "G-Y7HN2696FY"
         };
-
+    
         // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+    
         function logSubmission() {
             const username = document.getElementById('username').value;
             const difficulty = document.getElementById('difficulty').value;
             const points = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 2 : 4;
-
+    
             if (!username) {
                 alert("Please enter your name!");
                 return;
             }
-
+    
             const submission = {
                 username,
                 difficulty,
                 points,
                 timestamp: new Date().toISOString()
             };
-
-            db.ref('submissions').push(submission);
+    
+            // Push the submission to Firebase
+            push(ref(db, 'submissions'), submission)
+                .then(() => {
+                    console.log("Submission logged successfully!");
+                })
+                .catch((error) => {
+                    console.error("Error logging submission:", error);
+                });
         }
-
+    
         function updateLeaderboard() {
-            db.ref('submissions').on('value', (snapshot) => {
+            const submissionsRef = ref(db, 'submissions');
+            onValue(submissionsRef, (snapshot) => {
                 const submissions = snapshot.val();
                 const scores = {};
                 const historyList = [];
-
+    
                 for (let id in submissions) {
                     const { username, difficulty, points, timestamp } = submissions[id];
-
+    
                     if (!scores[username]) {
                         scores[username] = { easy: 0, medium: 0, hard: 0, total: 0 };
                     }
-
+    
                     scores[username][difficulty]++;
                     scores[username].total += points;
-
+    
                     historyList.push(`${username} solved a ${difficulty} problem (+${points}) at ${new Date(timestamp).toLocaleString()}`);
                 }
-
+    
                 // Update Leaderboard Table
                 const leaderboardTable = document.getElementById('leaderboard');
                 leaderboardTable.innerHTML = '';
@@ -124,14 +133,15 @@
                     </tr>`;
                     leaderboardTable.innerHTML += row;
                 });
-
+    
                 // Update History
                 const historyDiv = document.getElementById('history');
                 historyDiv.innerHTML = historyList.join('<br>');
             });
         }
-
+    
         updateLeaderboard(); // Initialize leaderboard
     </script>
+
 </body>
 </html>
