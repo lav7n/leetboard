@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeetCode Leaderboard</title>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .form-container {
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>LeetCode Leaderboard</h1>
+    <div class="form-container">
+        <input type="text" id="username" placeholder="Your Name">
+        <select id="difficulty">
+            <option value="easy">Easy (1 pt)</option>
+            <option value="medium">Medium (2 pts)</option>
+            <option value="hard">Hard (4 pts)</option>
+        </select>
+        <button onclick="logSubmission()">Log Submission</button>
+    </div>
+    <h2>Leaderboard</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Easy</th>
+                <th>Medium</th>
+                <th>Hard</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody id="leaderboard"></tbody>
+    </table>
+    <h2>History</h2>
+    <div id="history"></div>
+
+    <script>
+        // Firebase configuration (replace with your project details)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function logSubmission() {
+            const username = document.getElementById('username').value;
+            const difficulty = document.getElementById('difficulty').value;
+            const points = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 2 : 4;
+
+            if (!username) {
+                alert("Please enter your name!");
+                return;
+            }
+
+            const submission = {
+                username,
+                difficulty,
+                points,
+                timestamp: new Date().toISOString()
+            };
+
+            db.ref('submissions').push(submission);
+        }
+
+        function updateLeaderboard() {
+            db.ref('submissions').on('value', (snapshot) => {
+                const submissions = snapshot.val();
+                const scores = {};
+                const historyList = [];
+
+                for (let id in submissions) {
+                    const { username, difficulty, points, timestamp } = submissions[id];
+
+                    if (!scores[username]) {
+                        scores[username] = { easy: 0, medium: 0, hard: 0, total: 0 };
+                    }
+
+                    scores[username][difficulty]++;
+                    scores[username].total += points;
+
+                    historyList.push(`${username} solved a ${difficulty} problem (+${points}) at ${new Date(timestamp).toLocaleString()}`);
+                }
+
+                // Update Leaderboard Table
+                const leaderboardTable = document.getElementById('leaderboard');
+                leaderboardTable.innerHTML = '';
+                Object.keys(scores).forEach(name => {
+                    const { easy, medium, hard, total } = scores[name];
+                    const row = `<tr>
+                        <td>${name}</td>
+                        <td>${easy}</td>
+                        <td>${medium}</td>
+                        <td>${hard}</td>
+                        <td>${total}</td>
+                    </tr>`;
+                    leaderboardTable.innerHTML += row;
+                });
+
+                // Update History
+                const historyDiv = document.getElementById('history');
+                historyDiv.innerHTML = historyList.join('<br>');
+            });
+        }
+
+        updateLeaderboard(); // Initialize leaderboard
+    </script>
+</body>
+</html>
